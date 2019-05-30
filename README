@@ -1,0 +1,20 @@
+Files for UCSD - ECE285 - IVR (2019)
+------------------------------------
+
+To the studens,
+
+  Do all your assignments and your project in this folder.
+
+Write your Jupyter notebook in this folder and name them as
+- assignment*.ipynb for the assignments,
+- project*.ipynb fot the projects.
+
+Complete the imagetools package within the Python files
+- imagetools/assignment1.py, imagetools/assignment2.py, ... ,
+- imagetools/projectA.py, imagetools/projectB.py, ... .
+
+All assets are located in the directory assets.
+
+Good luck!
+
+Charles Deledalle
