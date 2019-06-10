@@ -182,8 +182,6 @@ def div(f, boundary='periodical'):
     d = first_term + second_term
     return d
 
-
-
 def laplacian(x, boundary='periodical'):
     l1 = np.array([[1],[-2],[1]])
     l2 = l1.T

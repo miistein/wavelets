@@ -23,7 +23,7 @@ class Identity(LinearOperator):
 
     def gram(self, x):
         # apply the gram matrix to x, which is equivalent to just returning x
-        return x
+        return self.__call__(self.adjoint(x))
     
     def gram_resolvent(self, x, tau):
         # do the inversion by the conjugate gradient
@@ -72,8 +72,8 @@ class RandomMasking(LinearOperator):
         return self.__call__(x)
 
     def gram(self, x):
-        # self.adjoint(self.__call__(x),x), reduced to below because 0*0 =0, 1*0 =0, 0*1=0,1*1=1
-        return self._apply_random_mask * x
+        # can also be reduced to self._apply_random_mask * x because 0*0=0, 1*0 =0, 0*1=0,1*1=1
+        return self.__call__(self.adjoint(x))
     
     def gram_resolvent(self, x, tau):
         return cg(lambda z: z + tau * self.gram(z), x)
