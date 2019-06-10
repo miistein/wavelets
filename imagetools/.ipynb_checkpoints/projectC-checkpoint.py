@@ -53,7 +53,7 @@ class Convolution(LinearOperator):
     def gram_resolvent(self, x, tau):
         # Assuming that boundary is always periodical
         # Just like the Gram LinearOperator, can do the inversion in the Fourier domain when periodical
-        res_nu = 1 / (1 - tau * self._conv_nu)
+        res_nu = 1 / (1 + tau * self._nu_fft * self._mu_fft)
         return convolvefft(x, res_nu)
     
 class RandomMasking(LinearOperator):
