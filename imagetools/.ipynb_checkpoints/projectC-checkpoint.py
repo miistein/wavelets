@@ -3,6 +3,7 @@
 COMPLETE THIS FILE
 
 Your names here:
+Justin Law
 
 """
 
@@ -280,27 +281,22 @@ class DWT:
 
 def softthresh(z, t):
     new_z = (z - np.sign(z-t) * t) * np.maximum(np.abs(z)-t,0).astype(bool)
-    #new_z = (z-t)*((z-t)>0)*(np.abs(z)>np.abs(t))+(z+t)*(z+t<0)
     
     return new_z
 
 def softthresh_denoise(y, sig, W, alpha):
-    n1,n2 = y.shape[:2]
-    J=3
-    h,g= wavelet('db2')
-    #p= dwt_power(n1,n2,J=3,ndim=3)
     p=W.power()
     lamda=np.zeros(p.shape)
     tau=np.zeros(p.shape)
     lamda = alpha*p
     tau= (np.sqrt(2)*(sig**2))/lamda
     
-    z=dtw_crop(y,J)
-    z= dwt(y,J,h,g)
-    z_denoise= softthresh(z,tau)
-    denoise = idwt(z_denoise,J,h,g)
+    #z=dtw_crop(y,J)
+    z = W(y)
+    z_denoise = softthresh(z,tau)
+    # adjoint is inverse transform for both DWT and UDWT
+    denoise = W.adjoint(z_denoise)
     return denoise
-
 
 ################################################ 
 ####### part 3
