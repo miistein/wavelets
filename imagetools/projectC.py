@@ -78,6 +78,9 @@ class RandomMasking(LinearOperator):
     
     def gram_resolvent(self, x, tau):
         return cg(lambda z: z + tau * self.gram(z), x)
+        
+################
+# Part 2
 
 def flip (x):
     return np.transpose(x,axes= (1,0,2))
@@ -98,8 +101,6 @@ def dwt(x, J, h, g):
     z[:m1, :m2] = dwt(z[:m1, :m2], J - 1, h, g)
     return z
 
-
-
 def idwt(z, J, h, g): # 2d and multi-scale
     if J == 0:
         return z
@@ -119,7 +120,6 @@ def idwt1d(z, h, g): # 1d and 1scale
     x = convolve(coarse, g[::-1]) + convolve(detail, h[::-1])
     return x
     
-
 def shift(x, k, l, boundary):
     n1,n2 = x.shape[:2]
     xshifted = np.zeros(x.shape)
@@ -185,36 +185,26 @@ def convolve(x, nu, boundary='periodical', seperable='None'):
     return xconv
 
 
-class DWT(LinearOperator):
+class DWT:
     def __init__(self, shape, J, name):
         self.name = name
         self.J = J
         self.shape=shape
+        h,g = wavelet(self.name)
      
     def __call__(self, x):
         h,g = wavelet(self.name)
-        x= dtw_crop(x,self.J)
-        z_dwt= dwt(x,self.J,h,g)
-        return dwt(x,self.J,h,g)
-
+        z_dwt = dwt(x,self.J,h,g)
+        return z_dwt
+    
     def invert(self,x):
         h,g = wavelet(self.name)
-        x= dtw_crop(x,self.J)
-        z_idwt = idwt(x,self.J,h,g)
-        return z_idwt
+        return idwt(x,self.J,h,g)
     
     def power(self):
-        n1,n2 = self.shape[:2]
-        J = self.J
-        ndim = 3
-        if J == 0:
-            return np.ones((n1, n2, *[1] * (ndim - 2)))
-        m1, m2 = int(n1/2), int(n2/2)
-        c = 2 * dwt_power(m1, m2, J - 1, ndim=ndim)
-        de = np.ones((m1, m2, *[1] * (ndim - 2)))
-        p = np.concatenate((np.concatenate((c, de), axis=0),
-                        np.concatenate((de, de), axis=0)), axis=1)
-        return p
+        n1,n2= self.shape[:2]
+        J= self.J
+        return dwt_power(n1, n2, self.J, ndim=len(self.shape))
 
     def adjoint(self, x):
         return self.invert(x)
@@ -226,7 +216,95 @@ class DWT(LinearOperator):
         #return cg(lambda z: z + tau * self.gram(z), x)
         # reduced to:
         return x/(1+tau)
+   
+    def wavelet(name, d=2):
+    
+        if name in ('haar', 'db1'):
+            h = np.array([-1, 1])
+        if name is 'db2':
+            h = np.array([1, np.sqrt(3), -(3 + 2 * np.sqrt(3)), 2 + np.sqrt(3)])
+        if name is 'db4':
+            h = np.array(
+            [-0.230377813308855230, +0.714846570552541500, -0.630880767929590400,
+             -0.027983769416983850, +0.187034811718881140, +0.030841381835986965,
+             -0.032883011666982945, -0.010597401784997278])
+        if name is 'db8':
+            h = np.array(
+            [-0.0544158422, +0.3128715909, -0.6756307363, +0.5853546837,
+             +0.0158291053, -0.2840155430, -0.0004724846, +0.1287474266,
+             +0.0173693010, -0.0440882539, -0.0139810279, +0.0087460940,
+             +0.0048703530, -0.0003917404, -0.0006754494, -0.0001174768])
+        if name is 'sym4':
+            h = np.array(
+            [-0.03222310060404270, -0.012603967262037833, +0.09921954357684722,
+             +0.29785779560527736, -0.803738751805916100, +0.49761866763201545,
+             +0.02963552764599851, -0.075765714789273330])
+        if name is 'coif4':
+            h = np.array(
+            [-0.00089231366858231460, -0.00162949201260173260, +0.00734616632764209350,
+             +0.01606894396477634800, -0.02668230015605307200, -0.08126669968087875000,
+             +0.05607731331675481000, +0.41530840703043026000, -0.78223893092049900000,
+             +0.43438605649146850000, +0.06662747426342504000, -0.09622044203398798000,
+             -0.03933442712333749000, +0.02508226184486409700, +0.01521173152794625900,
+             -0.00565828668661072000, -0.00375143615727845700, +0.00126656192929894450,
+             +0.00058902075624433830, -0.00025997455248771324, -6.2339034461007130e-05,
+             +3.1229875865345646e-05, +3.2596802368833675e-06, -1.7849850030882614e-06])
+        h = h / np.sqrt(np.sum(h**2))
+        g = (-1)**(1 + np.arange(h.shape[0])) * h[::-1]
+        h = np.concatenate((h, np.array([0.])))
+        g = np.concatenate((g, np.array([0.])))
+        h = h.reshape(-1, *[1] * (d - 1))
+        g = g.reshape(-1, *[1] * (d - 1))
+        return h, g
+    
+    def dtw_crop(x, J):
+        n1, n2 = x.shape[:2]
+        r1 = np.mod(n1, 2**J)
+        r2 = np.mod(n2, 2**J)
+        if r1 > 0:
+            x = x[int(r1/2):-(r1-int(r1/2)), :]
+        if r2 > 0:
+            x = x[:, int(r2/2):-(r2-int(r2/2))]
+        return x
 
+def softthresh(z, t):
+    new_z = (z - np.sign(z-t) * t) * np.maximum(np.abs(z)-t,0).astype(bool)
+    #new_z = (z-t)*((z-t)>0)*(np.abs(z)>np.abs(t))+(z+t)*(z+t<0)
+    
+    return new_z
+
+def softthresh_denoise(y, sig, W, alpha):
+    n1,n2 = y.shape[:2]
+    J=3
+    h,g= wavelet('db2')
+    #p= dwt_power(n1,n2,J=3,ndim=3)
+    p=W.power()
+    lamda=np.zeros(p.shape)
+    tau=np.zeros(p.shape)
+    lamda = alpha*p
+    tau= (np.sqrt(2)*(sig**2))/lamda
+    
+    z=dtw_crop(y,J)
+    z= dwt(y,J,h,g)
+    z_denoise= softthresh(z,tau)
+    denoise = idwt(z_denoise,J,h,g)
+    return denoise
+
+
+def dwt_power(n1, n2, J, ndim=3):
+
+    if J == 0:
+        return np.ones((n1, n2, *[1] * (ndim - 2)))
+    m1, m2 = int(n1/2), int(n2/2)
+    c = 2 * dwt_power(m1, m2, J - 1, ndim=ndim)
+    de = np.ones((m1, m2, *[1] * (ndim - 2)))
+    p = np.concatenate((np.concatenate((c, de), axis=0),
+                        np.concatenate((de, de), axis=0)), axis=1)
+    return p
+
+
+################################################ 
+####### part 3
 
 def wavelet(name, d=2):
     if name in ('haar', 'db1'):
@@ -280,18 +358,6 @@ def fb_apply(x, fb):
     z = fb * x[:, :, np.newaxis]
     z = np.real(nf.ifft2(z, axes=(0, 1)))
     return z
-
-
-def interleave0(x):
-    x1=np.zeros(((x.shape[0]-1)*2+1,1))
-    x1[::2,:]=x
-    return x1
-
-def fb_adjoint(z, fb):
-    z = nf.fft2(z, axes=(0, 1))
-    x = (np.conj(fb) * z).sum(axis=2)
-    x = np.real(nf.ifft2(x, axes=(0, 1)))
-    return x
 
 class UDWT(LinearOperator):
     def __init__(self, shape, J, name = 'db2' , using_fb = True):
@@ -415,57 +481,3 @@ def psnr(x, x0):
     den = ((x.flatten() - x0.flatten())**2).mean()
     snr = 10*math.log(R**2/den, 10)
     return snr
-
-def dwt(x,J,h,g):
-    '''
-    Computes the discrete wavelet transform
-    Args:
-        x: input image
-        J: number of scales at which the wavelet transform is computed
-        h: high pass filter used 
-        g: lowpass filter used
-    Returns:
-        z : dwt coefficients
-    '''
-    if J == 0:
-        return x
-    n1, n2 = x.shape[:2]
-    m1, m2 = (int(n1 / 2), int(n2 / 2))
-    z = dwt1d(x, h, g)
-    z = np.rot90(dwt1d(np.rot90(z,k=3), h, g),k=1)
-    z[:m1, :m2] = dwt(z[:m1, :m2], J - 1, h, g)
-    return z
-
-def dwt1d(x, h, g): # 1d and 1scale
-    '''
-    compute 1D wavelet transform
-    Args:
-        x: input image
-        h:high pass filter
-        g:low pass filter
-    Returns:
-        z:dwt coefficients
-    '''
-    coarse = convolve(x, g)
-    detail = convolve(x, h)
-    z = np.concatenate((coarse[::2, :], detail[::2, :]), axis=0)
-    return z
-        
-def idwt(z, J, h, g): # 2d and multi-scale
-    if J == 0:
-        return z
-    n1, n2 = z.shape[:2]
-    m1, m2 = (int(n1 / 2), int(n2 / 2))
-    x = z.copy()
-    x[:m1, :m2] = idwt(x[:m1, :m2], J - 1, h, g)
-    x = np.rot90(idwt1d(np.rot90(x,k=3), h, g),k=1)
-    x = idwt1d(x, h, g)
-    return x
-
-def idwt1d(z, h, g): # 1d and 1scale
-    n1 = z.shape[0]
-    m1 = int(n1 / 2)
-    coarse, detail = np.zeros(z.shape), np.zeros(z.shape)
-    coarse[::2, :], detail[::2, :] = z[:m1, :], z[m1:, :]
-    x = convolve(coarse, g[::-1]) + convolve(detail, h[::-1])
-    return x    
