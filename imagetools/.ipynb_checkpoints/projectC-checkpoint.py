@@ -185,6 +185,17 @@ def convolve(x, nu, boundary='periodical', seperable='None'):
     return xconv
 
 
+def dwt_power(n1, n2, J, ndim=3):
+
+    if J == 0:
+        return np.ones((n1, n2, *[1] * (ndim - 2)))
+    m1, m2 = int(n1/2), int(n2/2)
+    c = 2 * dwt_power(m1, m2, J - 1, ndim=ndim)
+    de = np.ones((m1, m2, *[1] * (ndim - 2)))
+    p = np.concatenate((np.concatenate((c, de), axis=0),
+                        np.concatenate((de, de), axis=0)), axis=1)
+    return p
+
 class DWT:
     def __init__(self, shape, J, name):
         self.name = name
@@ -291,18 +302,6 @@ def softthresh_denoise(y, sig, W, alpha):
     return denoise
 
 
-def dwt_power(n1, n2, J, ndim=3):
-
-    if J == 0:
-        return np.ones((n1, n2, *[1] * (ndim - 2)))
-    m1, m2 = int(n1/2), int(n2/2)
-    c = 2 * dwt_power(m1, m2, J - 1, ndim=ndim)
-    de = np.ones((m1, m2, *[1] * (ndim - 2)))
-    p = np.concatenate((np.concatenate((c, de), axis=0),
-                        np.concatenate((de, de), axis=0)), axis=1)
-    return p
-
-
 ################################################ 
 ####### part 3
 
@@ -358,18 +357,6 @@ def fb_apply(x, fb):
     z = fb * x[:, :, np.newaxis]
     z = np.real(nf.ifft2(z, axes=(0, 1)))
     return z
-
-
-def interleave0(x):
-    x1=np.zeros(((x.shape[0]-1)*2+1,1))
-    x1[::2,:]=x
-    return x1
-
-def fb_adjoint(z, fb):
-    z = nf.fft2(z, axes=(0, 1))
-    x = (np.conj(fb) * z).sum(axis=2)
-    x = np.real(nf.ifft2(x, axes=(0, 1)))
-    return x
 
 class UDWT(LinearOperator):
     def __init__(self, shape, J, name = 'db2' , using_fb = True):
