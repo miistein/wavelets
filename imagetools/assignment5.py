@@ -216,3 +216,34 @@ def kernel2fft(nu, n1, n2, separable=None):
     lbd = npf.fft2(tmp,axes=(0,1))
 
     return lbd      
+
+def kernel2fft(nu, n1, n2, separable=None):
+    if separable is None:
+        tmp = np.zeros((n1, n2))
+        s1 = int((nu.shape[0] - 1) / 2)
+        s2 = int((nu.shape[1] - 1) / 2)
+        tmp[:s1+1, :s2+1] = nu[s1:2*s1+1, s2:2*s2+1]
+        tmp[:s1+1, n2-s2:n2] = nu[s1:2*s1+1,:s2]
+        tmp[n1-s1:n1, :s2+1] = nu[:s1, s2: 2*s2+1]
+        tmp[n1-s1:n1, n2-s2:n2] = nu[0:s1, 0:s2]
+        lbd = nf.fft2(tmp, axes=(0, 1))
+    else:
+        tmp = np.zeros((n1, n2))
+        s1 = int((nu[0].shape[0] - 1) / 2)
+        s2 = int((nu[1].shape[1] - 1) / 2)
+        nu = nu[0]*nu[1]
+        tmp[:s1+1, :s2+1] = nu[s1:2*s1+1, s2:2*s2+1]
+        tmp[:s1+1, n2-s2:n2] = nu[s1:2*s1+1,:s2]
+        tmp[n1-s1:n1, :s2+1] = nu[:s1, s2: 2*s2+1]
+        tmp[n1-s1:n1, n2-s2:n2] = nu[0:s1, 0:s2]
+        lbd = nf.fft2(tmp, axes=(0, 1))
+        #tmp1 = np.zeros((n1, n2))
+        #tmp2 = np.zeros((n1, n2))
+        #tmp1[:s1+1,0] = nu[0][s1:2*s1+1,0]
+        #tmp1[n1-s1:n1,0] = nu[0][:s1,0]
+        #tmp2[0,n2-s2:n2] = nu[1][0,:s2]
+        #tmp2[0,:s2+1] = nu[1][0,s2:2*s2+1]
+        #tmp = tmp1+tmp2
+        #lbd = nf.fft2(tmp, axes=(0,1))
+        
+    return lbd
