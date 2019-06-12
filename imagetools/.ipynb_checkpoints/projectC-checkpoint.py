@@ -3,6 +3,7 @@
 COMPLETE THIS FILE
 
 Your names here:
+Khoi Nguyen
 Justin Law
 
 """
@@ -348,11 +349,24 @@ def udwt_power(J, ndim=3):
     p[:, :, 1:] *= 2
     return p
 
-def fb_apply(x, fb):    
+def fb_apply(x, fb):
     x = nf.fft2(x, axes=(0, 1))
-    z = fb * x[:, :, np.newaxis]
+    if x.ndim == 3:
+        z = fb * x[:, :, np.newaxis,:]
+    else:
+        z = fb * x[:, :, np.newaxis]
     z = np.real(nf.ifft2(z, axes=(0, 1)))
+    for i in range(1,fb.shape[2],int((fb.shape[2]-1)/3)):
+        temp = np.copy(z[:,:,i])
+        z[:,:,i] = z[:,:,i+1]
+        z[:,:,i+1] = temp
     return z
+
+def fb_adjoint(z, fb):
+    z = nf.fft2(z, axes=(0, 1))
+    x = (np.conj(fb) * z).sum(axis=2)
+    x = np.real(nf.ifft2(x, axes=(0, 1)))
+    return x
 
 class UDWT(LinearOperator):
     def __init__(self, shape, J, name = 'db2' , using_fb = True):
@@ -417,7 +431,7 @@ class UDWT(LinearOperator):
         self.__g = g
         self.__J = J
         return z
-        
+    
     def udwt_create_fb(self, ndim=3):
         h = self.__h
         g = self.__g
@@ -436,8 +450,8 @@ class UDWT(LinearOperator):
         fbrec = self.udwt_create_fb(ndim = ndim)
         gf1 = kernel2fft(g,n1,1)
         hf1 = kernel2fft(h,n1,1)
-        gf2 = kernel2fft(g.T,1,n2)
-        hf2 = kernel2fft(h.T,1,n2)
+        gf2 = kernel2fft(g,n2,1)
+        hf2 = kernel2fft(h,n2,1)
         fb = np.zeros((n1, n2, 4), dtype=np.complex128)
         fb[:, :, 0] = np.outer(gf1, gf2) / 2
         fb[:, :, 1] = np.outer(gf1, hf2) / 2
