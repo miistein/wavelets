@@ -5,7 +5,7 @@ COMPLETE THIS FILE
 Your names here:
 Khoi Nguyen
 Justin Law
-
+Derar Droubi
 """
 
 from .assignment6 import *
@@ -350,12 +350,12 @@ def udwt_power(J, ndim=3):
     return p
 
 def fb_apply(x, fb):
-    x = nf.fft2(x, axes=(0, 1))
+    x = npf.fft2(x, axes=(0, 1))
     if x.ndim == 3:
         z = fb * x[:, :, np.newaxis,:]
     else:
         z = fb * x[:, :, np.newaxis]
-    z = np.real(nf.ifft2(z, axes=(0, 1)))
+    z = np.real(npf.ifft2(z, axes=(0, 1)))
     for i in range(1,fb.shape[2],int((fb.shape[2]-1)/3)):
         temp = np.copy(z[:,:,i])
         z[:,:,i] = z[:,:,i+1]
@@ -363,9 +363,9 @@ def fb_apply(x, fb):
     return z
 
 def fb_adjoint(z, fb):
-    z = nf.fft2(z, axes=(0, 1))
+    z = npf.fft2(z, axes=(0, 1))
     x = (np.conj(fb) * z).sum(axis=2)
-    x = np.real(nf.ifft2(x, axes=(0, 1)))
+    x = np.real(npf.ifft2(x, axes=(0, 1)))
     return x
 
 class UDWT(LinearOperator):
